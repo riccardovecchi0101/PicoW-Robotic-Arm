@@ -6,6 +6,11 @@ set(NAME PICO_FREERTOS) # <-- Name your project/executable here!
 # Pull in SDK (must be before project)
 include(pico_sdk_import.cmake)
 
+# Imposta automaticamente il path del Pico SDK e di FreeRTOS
+set(PICO_SDK_PATH "${CMAKE_SOURCE_DIR}/lib/pico-sdk" CACHE STRING "Path to the Pico SDK")
+set(FREERTOS_KERNEL_PATH "${CMAKE_SOURCE_DIR}/lib/FreeRTOS-Kernel" CACHE STRING "Path to FreeRTOS Kernel")
+
+
 project(pico_freertos C CXX ASM)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
