@@ -1,29 +1,84 @@
-# Raspberry Pi Pico W FreeRTOS Starter - In C
+# Raspberry Pi Pico W FreeRTOS – Ready-to-Use Template
 
-This is a simple blinky starter project for Raspberry Pi Pico W that uses FreeRTOS
+This repository provides a **ready-to-use environment** for developing FreeRTOS-based applications on the **Raspberry Pi Pico W**. Everything is already set up — you just need to clone, build, and flash.
 
-## Important Setup
+---
 
-- Clone [Pico SDK](https://github.com/raspberrypi/pico-sdk) and inside the cloned SDK directory run `git submodule update --init` to init all submodules
+## 🧩 Features
+- **FreeRTOS Kernel** and **Pico SDK** already included under `lib/`
+- Fully configured **CMake toolchain** (no need to set environment variables)
+- Works **out of the box** with Raspberry Pi Pico W
+- Includes a minimal working example (`try.c`) that blinks the onboard LED
 
-- Clone [FreeRTOS Kernel](https://github.com/FreeRTOS/FreeRTOS-Kernel)
+---
 
-- Pico SDK should be present in the machine and it's path should be used as an environment variable as `PICO_SDK_PATH` pointing to the cloned Pico SDK dir
+## 🚀 Getting Started
 
-- FreeRTOS-Kernel should be present in the machine and it's path should be used as an environment variable as `FREERSTOS_KERNEL_PATH` pointing to the cloned FreeRTOS-Kernel dir
+### 1️⃣ Clone the Repository
+```bash
+git clone https://github.com/riccardovecchi0101/PicoW-Robotic-Arm.git
+cd PicoW-Robotic-Arm
+```
 
-These environment variable should be used when calling `CMake` or defined in VSCode(**RECOMENDED**) using [this setup](https://www.youtube.com/watch?v=BAoTBg8MJJ4) that uses the `CMake Tools` extension.
+Everything you need (SDK + FreeRTOS) is already inside the `lib/` folder — no need to install or export extra paths.
 
-## Project Rename
+---
 
-To rename the project simply open the root `CMakeLists.txt` and change `project(pico_freertos C CXX ASM)` to `project(your_project_name C CXX ASM)`.
+### 2️⃣ Build the Project
+```bash
+mkdir build
+cd build
+cmake .. -DPICO_BOARD=pico_w
+make
+```
 
-## Outputs
+The compilation should complete successfully, producing a `.uf2` firmware file named `PICO_FREERTOS.uf2` in `build/src/`.
 
-After building, your binary will be under `build/src/src.uf2`. Take the `src.uf2` and push it you Pico W with `BOOTSEL`.
+---
 
-NOTE: The [setup video](https://www.youtube.com/watch?v=BAoTBg8MJJ4) mentioned before should show you how to build on VS Code.
+### 3️⃣ Flash to Pico W
+1. Hold down the **BOOTSEL** button while connecting the Pico W to your computer via USB.
+2. A new storage drive (named `RPI-RP2`) will appear.
+3. Drag-and-drop the generated UF2 file:
+   ```
+   build/src/PICO_FREERTOS.uf2
+   ```
+4. The board will reboot automatically and start running the program.
 
-### HAPPY CODING & TINKERING
+The included example (`try.c`) will make the onboard LED blink under FreeRTOS — confirming that your environment works perfectly.
 
-**Inspired by the [Learn Embedded Systems video series](https://www.youtube.com/watch?v=jCZxStjzGA8&list=PLEB5F4gTNK68IlRIJtcJ_2cW4dSdmreTw&index=14) on YouTube.**
+---
+
+## 🧠 Customization
+- To build your own application, modify or replace `src/try.c`.
+- Update the `add_executable()` section in `src/CMakeLists.txt` if you change filenames.
+- Re-run `cmake .. && make` to rebuild.
+
+---
+
+## 🧾 Credits & Inspiration
+This repository is based on and inspired by [racka98/PicoW-FreeRTOS-Template](https://github.com/racka98/PicoW-FreeRTOS-Template), with additional configuration to make it **self-contained** and **ready to compile immediately** without external dependencies or environment variables.
+
+---
+
+### 🧰 Outputs
+After a successful build, you’ll find your firmware here:
+```
+build/src/PICO_FREERTOS.uf2
+```
+
+---
+
+## ⚙️ Troubleshooting
+
+### 🧩 Common Issues
+- **CMake cannot find SDK or FreeRTOS:**  
+  Ensure that both are located inside the `lib/` directory (they are included by default in this repository).
+
+- **No LED blinking:**  
+  Make sure you flashed the correct `.uf2` file and that your board is a **Raspberry Pi Pico W**.
+
+- **`Permission denied` when flashing:**  
+  Ensure your user has write access to the mounted `RPI-RP2` drive or retry as administrator.
+
+---
