@@ -143,4 +143,4 @@ build/src/PICO_FREERTOS.uf2
 
 ---
 
-Made with ❤️ by [Riccardo Vecchi](https://github.com/riccardovecchi0101)
+
