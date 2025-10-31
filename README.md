@@ -104,6 +104,3 @@ Adapted to serve as a **lightweight, modular template** for your own FreeRTOS-ba
 
 ---
 
-## 📄 Licenses
-- [Raspberry Pi Pico SDK](https://github.com/raspberrypi/pico-sdk) – BSD-3-Clause License  
-- [FreeRTOS Kernel](https://github.com/FreeRTOS/FreeRTOS-Kernel) – MIT License  
