@@ -1,59 +1,70 @@
-# Raspberry Pi Pico W FreeRTOS – Ready-to-Use Template
+# Raspberry Pi Pico W FreeRTOS – Lightweight Template
 
-This repository provides a **fully self-contained environment** for developing FreeRTOS-based applications on the **Raspberry Pi Pico W**.  
-Everything you need — the Pico SDK, the FreeRTOS Kernel, and the CMake configuration — is already included and ready to build out of the box.
+This repository provides a **clean and lightweight environment** for developing FreeRTOS-based applications on the **Raspberry Pi Pico W**.  
+It is designed to be **modular**, letting you decide which SDK and kernel versions to use, while keeping the repository small and easy to maintain.
 
 ---
 
 ## 🧩 Features
-- ✅ **Fully portable** — no dependencies or setup required  
-- 🧠 **FreeRTOS Kernel** and **Pico SDK** already included in the `lib/` folder  
-- ⚙️ Preconfigured **CMake toolchain** (no need for environment variables)  
-- 🚀 Works immediately with Raspberry Pi Pico W  
-- 💡 Includes a minimal working example (`try.c`) that blinks the onboard LED  
+- 🧠 Compatible with **Raspberry Pi Pico SDK** and **FreeRTOS Kernel**
+- ⚙️ Preconfigured **CMake toolchain**
+- 🚀 Works immediately with Raspberry Pi Pico W
+- 💡 Includes a minimal working example (`try.c`) that blinks the onboard LED
 
 ---
 
 ## 📁 Project Structure
-
 ```
 PicoW-Robotic-Arm/
 │
-├── lib/
-│   ├── FreeRTOS-Kernel/       → FreeRTOS source and portable files
-│   └── pico-sdk/              → Official Raspberry Pi Pico SDK
+├── lib/                     → place SDKs here
+│   ├── pico-sdk/            → Raspberry Pi Pico SDK (to be downloaded)
+│   └── FreeRTOS-Kernel/     → FreeRTOS Kernel (to be downloaded)
 │
 ├── src/
-│   ├── try.c                  → Example FreeRTOS application (LED blink)
-│   └── CMakeLists.txt         → Source configuration
+│   ├── try.c                → Example FreeRTOS application
+│   └── CMakeLists.txt       → Source configuration
 │
-├── CMakeLists.txt             → Root project file
-├── .gitignore                 → Git configuration
-└── README.md                  → Project documentation
+├── CMakeLists.txt           → Root project file
+└── README.md                → Project documentation
 ```
 
 > ⚙️ **Note:**  
-> The `lib/` directory **already contains**:
-> - `lib/pico-sdk` → the official Raspberry Pi Pico SDK  
-> - `lib/FreeRTOS-Kernel` → the FreeRTOS kernel source  
->
-> This makes the repository **fully portable**. You can clone and build immediately, even offline.
+> The `lib/` directory **must contain** the following two components before building:  
+> - `lib/pico-sdk` → [Raspberry Pi Pico SDK](https://github.com/raspberrypi/pico-sdk)  
+> - `lib/FreeRTOS-Kernel` → [FreeRTOS Kernel](https://github.com/FreeRTOS/FreeRTOS-Kernel)
 
 ---
 
-## 🚀 Getting Started
+## ⚙️ Setting Up Dependencies
 
-### 1️⃣ Clone the Repository
+### Option 1️⃣ — Manual download
+Clone both repositories into the `lib/` folder:
 ```bash
-git clone https://github.com/riccardovecchi0101/PicoW-Robotic-Arm.git
-cd PicoW-Robotic-Arm
+mkdir lib
+cd lib
+git clone https://github.com/raspberrypi/pico-sdk.git
+git clone https://github.com/FreeRTOS/FreeRTOS-Kernel.git
+cd ..
 ```
 
-No extra setup required — the SDK and FreeRTOS are already included.
+### Option 2️⃣ — Use submodules (recommended)
+```bash
+git submodule add https://github.com/raspberrypi/pico-sdk lib/pico-sdk
+git submodule add https://github.com/FreeRTOS/FreeRTOS-Kernel lib/FreeRTOS-Kernel
+git submodule update --init --recursive
+```
+
+After this setup, your folder structure should look like:
+```
+lib/
+ ├── pico-sdk/
+ └── FreeRTOS-Kernel/
+```
 
 ---
 
-### 2️⃣ Build the Project
+## 🚀 Building the Project
 ```bash
 mkdir build
 cd build
@@ -61,86 +72,38 @@ cmake .. -DPICO_BOARD=pico_w
 make
 ```
 
-After a successful compilation, a `.uf2` firmware file named:
-
+After a successful build, the generated firmware (`.uf2`) will appear in:
 ```
 build/src/PICO_FREERTOS.uf2
 ```
 
-will be generated.
-
 ---
 
-### 3️⃣ Flash to Pico W
-1. Hold down the **BOOTSEL** button while connecting the Pico W to your computer via USB.  
-2. A new storage drive (`RPI-RP2`) will appear.  
-3. Drag and drop the generated UF2 file:
+## 🔌 Flashing to Pico W
+1. Hold down the **BOOTSEL** button while connecting the Pico W via USB  
+2. A new drive (`RPI-RP2`) will appear  
+3. Drag and drop the `.uf2` file:
    ```
    build/src/PICO_FREERTOS.uf2
    ```
-4. The board will reboot automatically and start running your FreeRTOS program.
-
-If everything works correctly, the onboard LED will blink — confirming that your setup is functional.
+4. The board will reboot automatically and start running the example program (LED blink)
 
 ---
 
 ## 🧠 Customization
-- Modify or replace `src/try.c` to create your own application.  
-- Update the `add_executable()` section in `src/CMakeLists.txt` if you change filenames.  
-- Re-run `cmake .. && make` to rebuild.  
+- Edit or replace `src/try.c` to create your own FreeRTOS application  
+- Update `src/CMakeLists.txt` if you change source file names  
+- Re-run `cmake .. && make` to rebuild
 
 ---
 
 ## 🧾 Credits & Inspiration
-This repository is based on and inspired by  
-👉 [racka98/PicoW-FreeRTOS-Template](https://github.com/racka98/PicoW-FreeRTOS-Template),  
-but it has been reworked to be **completely self-contained**, requiring **no submodules, no SDK downloads, and no external setup**.
+Based on and inspired by  
+👉 [racka98/PicoW-FreeRTOS-Template](https://github.com/racka98/PicoW-FreeRTOS-Template)  
+Adapted to serve as a **lightweight, modular template** for your own FreeRTOS-based Pico W projects.
 
 ---
 
-## ⚙️ Troubleshooting
-
-### 🧩 Common Issues
-- **CMake cannot find SDK or FreeRTOS:**  
-  Ensure that both folders exist inside `lib/`:
-  ```
-  lib/pico-sdk/
-  lib/FreeRTOS-Kernel/
-  ```
-  They are included by default — if missing, reclone the repository.
-
-- **No LED blinking:**  
-  Check that the correct `.uf2` file was flashed and that your board is a **Raspberry Pi Pico W**.
-
----
-
-## 🛠️ Updating SDK or FreeRTOS (optional)
-
-If you ever want to update the included libraries:
-
-### 🔹 Update Pico SDK
-```bash
-cd lib/pico-sdk
-git pull origin master
-```
-
-### 🔹 Update FreeRTOS Kernel
-```bash
-cd lib/FreeRTOS-Kernel
-git pull origin main
-```
-
-> ⚠️ Always verify that your `CMakeLists.txt` and include paths remain valid after updates,  
-> since newer SDK or FreeRTOS versions may introduce structural changes.
-
----
-
-### 🧰 Outputs
-After a successful build, you’ll find your firmware here:
-```
-build/src/PICO_FREERTOS.uf2
-```
-
----
-
-
+## 📄 Licenses
+- [Raspberry Pi Pico SDK](https://github.com/raspberrypi/pico-sdk) – BSD-3-Clause License  
+- [FreeRTOS Kernel](https://github.com/FreeRTOS/FreeRTOS-Kernel) – MIT License  
