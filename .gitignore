@@ -93,9 +93,4 @@ _deps
 
 build/
 
-# --- EXCEPTIONS ---
-!lib/
-!lib/**
-lib/**/.git/
-
 # End of https://www.toptal.com/developers/gitignore/api/c,c++,cmake
