@@ -2,7 +2,7 @@
 #include "hardware/pwm.h"
 #include <stdio.h>
 
-#define SERVO_PIN 15
+#define SERVO_PIN 11
 #define PWM_FREQ 50
 #define SERVO_MIN_US 500
 #define SERVO_MAX_US 2400
@@ -16,8 +16,8 @@ SCATOLA: close = 0, open = 180
 */
 
 // === LIMITI CORRETTI (ORIGINALI, NON INVERTITI) ===
-#define SAFE_CLOSE_ANGLE 20 // pinza chiusa
-#define SAFE_OPEN_ANGLE 120// pinza aperta (più ampio)
+#define SAFE_CLOSE_ANGLE  0// pinza chiusa
+#define SAFE_OPEN_ANGLE 180// pinza aperta (più ampio)
 #define MICRO_STEP 120        // movimento più evidente
 
 uint32_t setup_pwm(uint pin) {
