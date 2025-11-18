@@ -1,7 +1,12 @@
 
 add_executable(${NAME}  
         servo.c
+        robot.c
+        main.c
         )
+
+# Include current directory for .h files
+target_include_directories(${NAME} PRIVATE .)
 
 # pull in common dependencies
 target_link_libraries(${NAME} 

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.12)
 
 # Change your executable name to something creative!
-set(NAME PICO_FREERTOS) # <-- Name your project/executable here!
+set(NAME PICO_FREERTOS_ROBOTIC_ARM)# <-- Name your project/executable here!
 
 # Pull in SDK (must be before project)
 include(pico_sdk_import.cmake)
@@ -9,6 +9,9 @@ include(pico_sdk_import.cmake)
 # Imposta automaticamente il path del Pico SDK e di FreeRTOS
 set(PICO_SDK_PATH "${CMAKE_SOURCE_DIR}/lib/pico-sdk" CACHE STRING "Path to the Pico SDK")
 set(FREERTOS_KERNEL_PATH "${CMAKE_SOURCE_DIR}/lib/FreeRTOS-Kernel" CACHE STRING "Path to FreeRTOS Kernel")
+
+set(PICO_CYW43_ARCH_THREADSAFE_BACKGROUND ON)
+
 
 
 project(pico_freertos C CXX ASM)
@@ -23,6 +26,7 @@ include_directories("${FREERTOS_CONFIG_FILE_DIRECTORY}") # FreeRTOS config files
 
 # Initialize the SDK
 pico_sdk_init()
+set(PICO_STDIO_USB_CONNECT_WAIT_TIMEOUT_MS 0)
 
 # Initialize all other external libs & dependencies
 include(FreeRTOS_Kernel_import.cmake)
