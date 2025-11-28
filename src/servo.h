@@ -1,4 +1,4 @@
-#ifndef SERVO_H
+/*#ifndef SERVO_H
 #define SERVO_H
 
 #include <stdint.h>   
@@ -18,4 +18,24 @@ void servo_update(servo_motor_t* servo);
 void swap_target_angle(servo_motor_t* servo);
 bool servo_finished(servo_motor_t* s);
 
+#endif*/
+
+#ifndef SERVO_H
+#define SERVO_H
+
+#include <stdint.h>
+
+typedef struct {
+    uint32_t pin;
+    float current_angle;
+    float target_angle;
+} servo_motor_t;
+
+void setup_pwm(uint32_t pin);
+void servo_init(servo_motor_t *s, uint32_t pin);
+
+void set_servo_target(servo_motor_t *s, float angle);
+void servo_update_interpolated(servo_motor_t *s);
+
 #endif
+

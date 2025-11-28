@@ -1,0 +1,6 @@
+Stato	scatola	tronco	su_giu	pinza
+START	0°	120°	80°	20°
+GO_DOWN	180°170°	35°	20°
+GRAB	180°170		35°	120°
+GO_UP	0°	120°	80°	20°
+RELEASE	0°	120°	80°	120°

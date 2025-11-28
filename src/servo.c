@@ -1,4 +1,4 @@
-#include "pico/stdlib.h"
+/*#include "pico/stdlib.h"
 #include "hardware/pwm.h"
 #include "servo.h"
 #include <math.h>
@@ -10,10 +10,10 @@
 
 static uint32_t wrap = 0;
 
-/*
- * Configura un pin per generare un segnale PWM a 50 Hz.
- * Il servo richiede un periodo di 20 ms → 50 Hz.
- */
+
+Configura un pin per generare un segnale PWM a 50 Hz.
+Il servo richiede un periodo di 20 ms → 50 Hz.
+
 void setup_pwm(uint32_t pin) {
     gpio_set_function(pin, GPIO_FUNC_PWM);
     uint slice = pwm_gpio_to_slice_num(pin);
@@ -26,10 +26,10 @@ void setup_pwm(uint32_t pin) {
     pwm_set_enabled(slice, true);
 }
 
-/*
- * Converte un angolo in durata dell'impulso e poi in duty cycle PWM.
- * Aggiorna anche servo_current_angle.
- */
+
+Converte un angolo in durata dell'impulso e poi in duty cycle PWM.
+Aggiorna anche servo_current_angle.
+
 void set_servo_angle(uint32_t pin, float angle, servo_motor_t* servo) {
 
     // limiti meccanici del servo
@@ -50,10 +50,10 @@ void set_servo_angle(uint32_t pin, float angle, servo_motor_t* servo) {
     pwm_set_gpio_level(pin, level);
 }
 
-/*
- * Movimento interpolato NON BLOCCANTE.
- * Avanza il servo di uno step verso target_angle.
- */
+
+mento interpolato NON BLOCCANTE.
+za il servo di uno step verso target_angle.
+
 void servo_update(servo_motor_t* servo) {
 
     float current = servo->servo_current_angle;
@@ -74,9 +74,9 @@ void servo_update(servo_motor_t* servo) {
     set_servo_angle(servo->pin, next, servo);
 }
 
-/*
- * Inverte il target di un singolo servo.
- */
+
+Inverte il target di un singolo servo.
+
 void swap_target_angle(servo_motor_t* servo){
     if (servo->target_angle == servo->servo_min_angle)
         servo->target_angle = servo->servo_max_angle;
@@ -84,9 +84,67 @@ void swap_target_angle(servo_motor_t* servo){
         servo->target_angle = servo->servo_min_angle;
 }
 
-/*
- * Ritorna true se il servo ha raggiunto il target.
- */
+
+rue se il servo ha raggiunto il target.
+
 bool servo_finished(servo_motor_t* s) {
-    return fabs(s->target_angle - s->servo_current_angle) <= fabs(s->step_angle);
+    return fabs(s->target_angle - s->servo_current_angle) < s->step_angle; // DEAD ZONE 2°
+}*/
+
+#include "servo.h"
+#include "pico/stdlib.h"
+#include "hardware/pwm.h"
+#include <math.h>
+
+#define PWM_FREQ 50
+#define SERVO_MIN_US 500
+#define SERVO_MAX_US 2400
+
+static uint32_t wrap = 0;
+
+void setup_pwm(uint32_t pin) {
+    gpio_set_function(pin, GPIO_FUNC_PWM);
+    uint slice = pwm_gpio_to_slice_num(pin);
+
+    float divider = 125.0f;  
+    wrap = (125000000 / divider) / PWM_FREQ;
+
+    pwm_set_clkdiv(slice, divider);
+    pwm_set_wrap(slice, wrap);
+    pwm_set_enabled(slice, true);
+}
+
+void servo_init(servo_motor_t *s, uint32_t pin) {
+    s->pin = pin;
+    s->current_angle = 0;
+    s->target_angle = 0;
+    setup_pwm(pin);
+}
+
+void set_servo_target(servo_motor_t *s, float angle) {
+    s->target_angle = angle;
+}
+
+static void apply_pwm(uint32_t pin, float us) {
+    uint slice = pwm_gpio_to_slice_num(pin);
+    float duty = (us / 20000.0f) * wrap;
+    pwm_set_gpio_level(pin, (uint16_t)duty);
+}
+
+void servo_update_interpolated(servo_motor_t *s) {
+    float diff = s->target_angle - s->current_angle;
+
+    if (fabsf(diff) < 0.5f) return;
+
+    if (s -> pin == 10) {
+        s->current_angle += diff * 0.15f;   // velocità triplicata
+    }
+
+    if(s-> pin == 12)
+        s->current_angle += diff * 0.02f;
+    else
+        s->current_angle += diff * 0.05f;
+
+    float us = SERVO_MIN_US + (s->current_angle / 180.0f) * (SERVO_MAX_US - SERVO_MIN_US);
+    apply_pwm(s->pin, us);
 }

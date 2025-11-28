@@ -1,0 +1,2 @@
+picotool reboot -f --usb
+picotool load firmware.uf2
