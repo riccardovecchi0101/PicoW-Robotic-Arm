@@ -1,211 +1,176 @@
-
-/*#include <stdio.h>
-#include "pico/stdlib.h"
-#include "FreeRTOS.h"
-#include "task.h"
-#include "hardware/pwm.h"
-
-#include "servo.h"
-#include "robot.h"  
-// --- inizializziamo il tuo braccio robotico ---
-
-bool paused = false;
-robotic_arm_t arm = {
-    .pinza = {
-        .pin = 10,
-        .servo_min_angle = 20,
-        .servo_max_angle = 120,
-        .servo_current_angle = 20,
-        //.target_angle = 120,      // inizializziamo come nel LogicTask
-        .step_angle = 2.0f
-    },
-
-    .tronco = {
-        .pin = 13,
-        .servo_min_angle = 120,
-        .servo_max_angle = 170,
-        .servo_current_angle = 120,
-        //.target_angle = 170,      // iniziale = min
-        .step_angle = 1.0f
-    },
-
-    .su_giu = {
-        .pin = 11,
-        .servo_min_angle = 35,
-        .servo_max_angle = 80,
-        .servo_current_angle = 80,
-        //.target_angle = 35,      // iniziale = min
-        .step_angle = 1.0f
-    },
-
-    .scatola = {
-        .pin = 12,
-        .servo_min_angle = 0,
-        .servo_max_angle = 180,
-        .servo_current_angle = 0,
-        //.target_angle = 180,      // iniziale = max
-        .step_angle = 1.0f
-    }
-};
-
-
-
-
- 
-void vServoUpdateTask(void *pv) {
-
-    const TickType_t period = pdMS_TO_TICKS(10);
-
-    for (;;) {
-        move_robotic_arm(&arm);
-       // printf("Su/Giu angle: %.2f\t target angle: %.2f\n", arm.scatola.servo_current_angle, arm.scatola.target_angle);
-        //sleep_ms(1000);
-             
-        vTaskDelay(period);
-    }
-}
-
-
-
-
-
-
-
- 
-void vLogicTask(void *pv) {
-
-    for (;;) {
-
-        // Quando TUTTI i servo hanno finito...
-        if (all_servos_finished(&arm)) {
-            swap_all_target_angles(&arm);
-            //paused = true;
-            //vTaskDelay(pdMS_TO_TICKS(1000));
-            //paused = false;
-        }
-
-        vTaskDelay(pdMS_TO_TICKS(20));
-
-    }
-}
-
-
-
-
-
-
-
-
-int main() {
-    stdio_init_all();
-
-    // inizializza PWM di ogni servo
-   // setup_pwm(arm.pinza.pin);
-    setup_pwm(arm.scatola.pin);
-    setup_pwm(arm.tronco.pin);
-    setup_pwm(arm.su_giu.pin);
-    setup_pwm(arm.pinza.pin);
-    //setup_pwm(arm.su_giu.pin);
-    //setup_pwm(arm.scatola.pin);
-
-    //arm.tronco.target_angle = arm.tronco.servo_current_angle; 
-    // crea task
-
-    set_servo_angle(arm.scatola.pin, arm.scatola.servo_current_angle, &arm.scatola);
-    set_servo_angle(arm.tronco.pin, arm.tronco.servo_current_angle, &arm.tronco);
-    set_servo_angle(arm.su_giu.pin, arm.su_giu.servo_current_angle, &arm.su_giu);
-    set_servo_angle(arm.pinza.pin, arm.pinza.servo_current_angle, &arm.pinza);
-    sleep_ms(3000);
-
-
-
-
-    //pwm_set_enabled(pwm_gpio_to_slice_num(arm.su_giu.pin), false);
-    xTaskCreate(vServoUpdateTask, "ServoUpdate", 256, NULL, 2, NULL);
-    xTaskCreate(vLogicTask,      "LogicTask",    256, NULL, 1, NULL);
-
-    // avvia scheduler FreeRTOS
-    vTaskStartScheduler();
-
-    while (1) {}
-}
-
-*/
-
 #include <stdio.h>
+#include <stdbool.h>
 #include "pico/stdlib.h"
+
 #include "FreeRTOS.h"
 #include "task.h"
+#include "semphr.h"
+
 #include "servo.h"
 #include "robot.h"
+#include "ir.h"
 
-/*
- * Servomotori
- */
+/* =========================================================================
+ *                          VARIABILI GLOBALI
+ * ========================================================================= */
+
+// Servo
 servo_motor_t servo_scatola;
 servo_motor_t servo_tronco;
 servo_motor_t servo_su_giu;
 servo_motor_t servo_pinza;
 
-/*
- * TASK: aggiornamento interpolato servo
- */
+// IR
+IR_Sensor_t ir;
+
+// Flag protetto da mutex
+static bool oggetto_rilevato = false;
+static SemaphoreHandle_t xIrMutex = NULL;
+
+/* =========================================================================
+ *                     FUNZIONI THREAD-SAFE PER L'IR
+ * ========================================================================= */
+
+static void set_oggetto_rilevato(bool value) {
+    if (!xIrMutex) return;
+    xSemaphoreTake(xIrMutex, portMAX_DELAY);
+    oggetto_rilevato = value;
+    xSemaphoreGive(xIrMutex);
+}
+
+static bool get_oggetto_rilevato(void) {
+    bool value = false;
+    if (!xIrMutex) return false;
+    xSemaphoreTake(xIrMutex, portMAX_DELAY);
+    value = oggetto_rilevato;
+    xSemaphoreGive(xIrMutex);
+    return value;
+}
+
+bool all_servos_finished(){
+    return servo_finished(&servo_tronco) &&
+           servo_finished(&servo_scatola)&&
+           servo_finished(&servo_su_giu)&&
+           servo_finished(&servo_pinza);
+
+}
+
+
+
+void move_to_start(){
+    set_servo_target(&servo_scatola, robot.movimento_target.scatola);
+    set_servo_target(&servo_tronco,  robot.movimento_target.tronco);
+    set_servo_target(&servo_su_giu,  robot.movimento_target.su_giu);
+    set_servo_target(&servo_pinza,   robot.movimento_target.pinza);
+
+    while(!all_servos_finished()){
+        servo_update_interpolated(&servo_scatola);
+        servo_update_interpolated(&servo_tronco);
+        servo_update_interpolated(&servo_su_giu);
+        servo_update_interpolated(&servo_pinza);
+    }
+
+
+}
+
+/* =========================================================================
+ *                                TASK IR
+ * ========================================================================= */
+
+void IrTask(void *p) {
+    (void)p;
+
+    while (1) {
+        bool detected = ir_sensor_detect(&ir);
+        set_oggetto_rilevato(detected);
+        vTaskDelay(pdMS_TO_TICKS(10));   // Polling leggero e affidabile
+    }
+}
+
+/* =========================================================================
+ *                           TASK AGGIORNAMENTO SERVO
+ * ========================================================================= */
+
 void ServoTask(void *p) {
+    (void)p;
+
     while (1) {
         servo_update_interpolated(&servo_scatola);
         servo_update_interpolated(&servo_tronco);
         servo_update_interpolated(&servo_su_giu);
         servo_update_interpolated(&servo_pinza);
-        vTaskDelay(pdMS_TO_TICKS(20));
+
+        vTaskDelay(pdMS_TO_TICKS(20));  // 50 Hz -> buono per interpolazione
     }
 }
 
-/*
- * TASK: logica/movimento
- */
- void LogicTask(void *p) {
+/* =========================================================================
+ *                           TASK LOGICA DEL ROBOT
+ * ========================================================================= */
+
+void LogicTask(void *p) {
+    (void)p;
+
     robot_state_t stato_precedente = robot.stato;
 
     while (1) {
 
-        // Salva lo stato precedente
-        stato_precedente = robot.stato;
-
-        // Aggiorna la macchina a stati
-        robot_update_state_machine();
-
-        // --- DELAY SPECIALE: GRAB → GO_UP ---
-        if (stato_precedente == STATO_GRAB && robot.stato == STATO_GO_UP) {
-            // aspetta che la pinza si chiuda
-            //vTaskDelay(pdMS_TO_TICKS(5000));
+        // Se nessun oggetto → robot fermo
+        if (!get_oggetto_rilevato() && robot.stato == STATO_START) {
+            vTaskDelay(pdMS_TO_TICKS(50));
+            continue;
         }
 
-        // Aggiorna i target
+        // Aggiorna FSM
+        stato_precedente = robot.stato;
+        robot_update_state_machine();
+
+        // Esempio: puoi mettere un delay extra tra stati critici
+        if (stato_precedente == STATO_GRAB && robot.stato == STATO_GO_UP) {
+            // vTaskDelay(pdMS_TO_TICKS(500));
+        }
+
+        // Aggiorna target servo secondo la FSM
         set_servo_target(&servo_scatola, robot.movimento_target.scatola);
         set_servo_target(&servo_tronco,  robot.movimento_target.tronco);
         set_servo_target(&servo_su_giu,  robot.movimento_target.su_giu);
         set_servo_target(&servo_pinza,   robot.movimento_target.pinza);
 
-        // Delay regolare
         vTaskDelay(pdMS_TO_TICKS(1000)); 
     }
 }
- 
 
+/* =========================================================================
+ *                                 MAIN
+ * ========================================================================= */
 
 int main() {
     stdio_init_all();
 
+    // Mutex per variabile IR
+    xIrMutex = xSemaphoreCreateMutex();
+
+    // Inizializzazione robot e IR
     robot_init();
+    ir_sensor_init(&ir, 15, true);  // active-low
 
-    servo_init(&servo_scatola, 12);
-    servo_init(&servo_tronco, 13);
-    servo_init(&servo_su_giu, 11);
-    servo_init(&servo_pinza, 10);
+    // Inizializzazione servo (con speed ottimale)
+    servo_init(&servo_scatola, 12, 0,   0.12f);
+    servo_init(&servo_tronco,  13, 120, 0.12f);
+    servo_init(&servo_su_giu,  11, 80,  0.12f);
+    servo_init(&servo_pinza,   10, 20,  0.12f);
 
-    xTaskCreate(ServoTask, "ServoTask", 1024, NULL, 2, NULL);
-    xTaskCreate(LogicTask, "LogicTask", 1024, NULL, 1, NULL);
+    // Porta il robot alla posizione iniziale
+    move_to_start();
+    sleep_ms(1500);
 
+    // Creazione dei task
+    xTaskCreate(IrTask,    "IrTask",    512,  NULL, 3, NULL);   // PRIORITÀ ALTA
+    xTaskCreate(ServoTask, "ServoTask", 1024, NULL, 2, NULL);   // MEDIA
+    xTaskCreate(LogicTask, "LogicTask", 1024, NULL, 1, NULL);   // BASSA
+
+    // Avvio scheduler
     vTaskStartScheduler();
+
     while (1) {}
 }
