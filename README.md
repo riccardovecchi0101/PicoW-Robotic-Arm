@@ -36,48 +36,16 @@ PicoW-Robotic-Arm/
 
 ---
 
-## ⚙️ Setting Up Dependencies
+The easiest and fastest way to prepare the project is to use the included **install.sh** script.
 
-### Option 1️⃣ — Manual download
-Clone both repositories into the `lib/` folder:
-```bash
-mkdir lib
-cd lib
-git clone https://github.com/raspberrypi/pico-sdk.git
-git clone https://github.com/FreeRTOS/FreeRTOS-Kernel.git
-cd ..
-```
+Run:
 
-### Option 2️⃣ — Use submodules (recommended)
-```bash
-git submodule add https://github.com/raspberrypi/pico-sdk lib/pico-sdk
-git submodule add https://github.com/FreeRTOS/FreeRTOS-Kernel lib/FreeRTOS-Kernel
-git submodule update --init --recursive
-```
+./install.sh
 
-After this setup, your folder structure should look like:
-```
-lib/
- ├── pico-sdk/
- └── FreeRTOS-Kernel/
-```
 
----
+Compile:
 
-## 🚀 Building the Project
-```bash
-mkdir build
-cd build
-cmake .. -DPICO_BOARD=pico_w
-make
-```
-
-After a successful build, the generated firmware (`.uf2`) will appear in:
-```
-build/src/PICO_FREERTOS.uf2
-```
-
----
+./compile.sh
 
 ## 🔌 Flashing to Pico W
 1. Hold down the **BOOTSEL** button while connecting the Pico W via USB  
