@@ -1,66 +1,58 @@
 #!/bin/bash
-
 set -e
 
-# ============================
-# CONFIG
-# ============================
+echo "=== Raspberry Pi Pico W FreeRTOS – Setup STABILE ==="
 
-USE_SUBMODULES=true   # metti false per clone normale
-SDK_DIR="lib/pico-sdk"
-FREERTOS_DIR="lib/FreeRTOS-Kernel"
+# ============================================================
+#  TAG STABILI (cambiami solo se proprio ti serve)
+# ============================================================
+PICO_SDK_TAG="1.5.1"
+FREERTOS_TAG="V10.5.1"
 
-echo "=== Raspberry Pi Pico W FreeRTOS Template Setup ==="
+# ============================================================
+# 1. Cleanup submodules vecchi
+# ============================================================
+echo "[1/6] Pulizia submodules esistenti..."
 
-# ============================
-# 1. Creazione cartella lib/
-# ============================
-echo "[1/5] Creazione cartella lib/"
+git submodule deinit -f lib/pico-sdk 2>/dev/null || true
+git rm -f lib/pico-sdk 2>/dev/null || true
+rm -rf lib/pico-sdk
+
+git submodule deinit -f lib/FreeRTOS-Kernel 2>/dev/null || true
+git rm -f lib/FreeRTOS-Kernel 2>/dev/null || true
+rm -rf lib/FreeRTOS-Kernel
+
 mkdir -p lib
 
-# ============================
-# 2. Download dipendenze
-# ============================
+# ============================================================
+# 2. Aggiunta submodules STABILI
+# ============================================================
+echo "[2/6] Download Pico SDK (tag stabile: $PICO_SDK_TAG)"
+git submodule add -b $PICO_SDK_TAG https://github.com/raspberrypi/pico-sdk lib/pico-sdk
 
-if [ "$USE_SUBMODULES" = true ]; then
-    echo "[2/5] Inizializzazione submodules..."
-    git submodule add https://github.com/raspberrypi/pico-sdk $SDK_DIR || true
-    git submodule add https://github.com/FreeRTOS/FreeRTOS-Kernel $FREERTOS_DIR || true
-    git submodule update --init --recursive
-else
-    echo "[2/5] Download manuale repository..."
-    
-    if [ ! -d "$SDK_DIR" ]; then
-        git clone https://github.com/raspberrypi/pico-sdk $SDK_DIR
-    fi
-    
-    if [ ! -d "$FREERTOS_DIR" ]; then
-        git clone https://github.com/FreeRTOS/FreeRTOS-Kernel $FREERTOS_DIR
-    fi
-fi
+echo "[3/6] Download FreeRTOS Kernel (tag stabile: $FREERTOS_TAG)"
+git submodule add -b $FREERTOS_TAG https://github.com/FreeRTOS/FreeRTOS-Kernel lib/FreeRTOS-Kernel
 
-# ============================
-# 3. Preparazione build/
-# ============================
-echo "[3/5] Creazione cartella build/"
+# ============================================================
+# 3. Inizializzazione submodules ricorsiva
+# ============================================================
+echo "[4/6] Inizializzazione submodules ricorsiva..."
+git submodule update --init --recursive
+
+# ============================================================
+# 4. Configurazione build
+# ============================================================
+echo "[5/6] Creazione cartella build/"
 rm -rf build
 mkdir build
 cd build
 
-# ============================
-# 4. Configurazione CMake
-# ============================
-echo "[4/5] Esecuzione CMake..."
+echo "[6/6] Configurazione e compilazione..."
 cmake .. -DPICO_BOARD=pico_w
-
-# ============================
-# 5. Compilazione
-# ============================
-echo "[5/5] Compilazione..."
 make -j$(nproc)
 
-echo "============================================="
-echo "  ✔ Build completata!"
-echo "  Firmware generato in: build/src/PICO_FREERTOS.uf2"
-echo "============================================="
+echo "========================================================="
+echo " ✔ Setup COMPLETATO senza errori!"
+echo " ✔ Firmware generato in: build/src/PICO_FREERTOS.uf2"
+echo "========================================================="
 
