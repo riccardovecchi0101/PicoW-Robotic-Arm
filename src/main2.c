@@ -47,30 +47,29 @@ static bool get_oggetto_rilevato(void) {
     return value;
 }
 
-bool all_servos_finished(){
-    return servo_finished(&servo_tronco) &&
-           servo_finished(&servo_scatola)&&
-           servo_finished(&servo_su_giu)&&
-           servo_finished(&servo_pinza);
+/* =========================================================================
+ *                           FUNZIONI SERVO
+ * ========================================================================= */
 
+bool all_servos_finished() {
+    return servo_finished(&servo_tronco) &&
+           servo_finished(&servo_scatola) &&
+           servo_finished(&servo_su_giu) &&
+           servo_finished(&servo_pinza);
 }
 
-
-
-void move_to_start(){
+void move_to_start() {
     set_servo_target(&servo_scatola, robot.movimento_target.scatola);
     set_servo_target(&servo_tronco,  robot.movimento_target.tronco);
     set_servo_target(&servo_su_giu,  robot.movimento_target.su_giu);
     set_servo_target(&servo_pinza,   robot.movimento_target.pinza);
 
-    while(!all_servos_finished()){
+    while (!all_servos_finished()) {
         servo_update_interpolated(&servo_scatola);
         servo_update_interpolated(&servo_tronco);
         servo_update_interpolated(&servo_su_giu);
         servo_update_interpolated(&servo_pinza);
     }
-
-
 }
 
 /* =========================================================================
@@ -83,12 +82,12 @@ void IrTask(void *p) {
     while (1) {
         bool detected = ir_sensor_detect(&ir);
         set_oggetto_rilevato(detected);
-        vTaskDelay(pdMS_TO_TICKS(10));   // Polling leggero e affidabile
+        vTaskDelay(pdMS_TO_TICKS(10));
     }
 }
 
 /* =========================================================================
- *                           TASK AGGIORNAMENTO SERVO
+ *                           TASK SERVO
  * ========================================================================= */
 
 void ServoTask(void *p) {
@@ -100,43 +99,71 @@ void ServoTask(void *p) {
         servo_update_interpolated(&servo_su_giu);
         servo_update_interpolated(&servo_pinza);
 
-        vTaskDelay(pdMS_TO_TICKS(20));  // 50 Hz -> buono per interpolazione
+        vTaskDelay(pdMS_TO_TICKS(20));
     }
 }
 
 /* =========================================================================
- *                           TASK LOGICA DEL ROBOT
+ *                           TASK LOGICA ROBOT
  * ========================================================================= */
 
 void LogicTask(void *p) {
     (void)p;
 
-    robot_state_t stato_precedente = robot.stato;
-
     while (1) {
 
-        // Se nessun oggetto → robot fermo
         if (!get_oggetto_rilevato() && robot.stato == STATO_START) {
             vTaskDelay(pdMS_TO_TICKS(50));
             continue;
         }
 
-        // Aggiorna FSM
-        stato_precedente = robot.stato;
         robot_update_state_machine();
 
-        // Esempio: puoi mettere un delay extra tra stati critici
-        if (stato_precedente == STATO_GRAB && robot.stato == STATO_GO_UP) {
-            // vTaskDelay(pdMS_TO_TICKS(500));
-        }
-
-        // Aggiorna target servo secondo la FSM
         set_servo_target(&servo_scatola, robot.movimento_target.scatola);
         set_servo_target(&servo_tronco,  robot.movimento_target.tronco);
         set_servo_target(&servo_su_giu,  robot.movimento_target.su_giu);
         set_servo_target(&servo_pinza,   robot.movimento_target.pinza);
 
-        vTaskDelay(pdMS_TO_TICKS(1000)); 
+        vTaskDelay(pdMS_TO_TICKS(1000));
+    }
+}
+
+/* =========================================================================
+ *                           TASK STEPPER (NASTRO)
+ * ========================================================================= */
+
+#define STEP 16
+#define DIR  17
+#define STEP_DELAY_US 1800
+
+void StepperTask(void *p) {
+    (void)p;
+
+    gpio_init(STEP);
+    gpio_set_dir(STEP, GPIO_OUT);
+    gpio_put(STEP, 0);
+    
+    gpio_init(DIR);
+    gpio_set_dir(DIR, GPIO_OUT);
+    gpio_disable_pulls(DIR);
+    gpio_set_drive_strength(DIR, GPIO_DRIVE_STRENGTH_12MA);
+    gpio_put(DIR, 1);
+
+
+    sleep_ms(50);
+
+    while (1) {
+
+        if (!get_oggetto_rilevato()) {
+
+            gpio_put(STEP, 1);
+            sleep_us(STEP_DELAY_US);
+            gpio_put(STEP, 0);
+            sleep_us(STEP_DELAY_US);
+
+        } else {
+            vTaskDelay(pdMS_TO_TICKS(10));
+        }
     }
 }
 
@@ -145,31 +172,27 @@ void LogicTask(void *p) {
  * ========================================================================= */
 
 int main() {
+
     stdio_init_all();
 
-    // Mutex per variabile IR
     xIrMutex = xSemaphoreCreateMutex();
 
-    // Inizializzazione robot e IR
     robot_init();
     ir_sensor_init(&ir, 15, true);  // active-low
 
-    // Inizializzazione servo (con speed ottimale)
     servo_init(&servo_scatola, 12, 0,   0.12f);
     servo_init(&servo_tronco,  13, 120, 0.12f);
     servo_init(&servo_su_giu,  11, 80,  0.12f);
-    servo_init(&servo_pinza,   9, 20,  0.12f);
+    servo_init(&servo_pinza,   9, 20,   0.12f);
 
-    // Porta il robot alla posizione iniziale
     move_to_start();
     sleep_ms(1500);
 
-    // Creazione dei task
-    xTaskCreate(IrTask,    "IrTask",    512,  NULL, 3, NULL);   // PRIORITÀ ALTA
-    xTaskCreate(ServoTask, "ServoTask", 1024, NULL, 2, NULL);   // MEDIA
-    xTaskCreate(LogicTask, "LogicTask", 1024, NULL, 1, NULL);   // BASSA
+    xTaskCreate(IrTask,      "IrTask",      512,  NULL, 3, NULL);
+    xTaskCreate(ServoTask,   "ServoTask",   1024, NULL, 2, NULL);
+    xTaskCreate(LogicTask,   "LogicTask",   1024, NULL, 1, NULL);
+    xTaskCreate(StepperTask, "StepperTask", 512,  NULL, 2, NULL);
 
-    // Avvio scheduler
     vTaskStartScheduler();
 
     while (1) {}

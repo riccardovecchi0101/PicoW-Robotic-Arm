@@ -1,9 +1,9 @@
 
 add_executable(${NAME}  
-        servo.c
-        robot.c
-        main.c
-        ir.c
+       	main2.c
+       	robot.c
+       	servo.c
+       	ir.c
         )
 
 # Include current directory for .h files
