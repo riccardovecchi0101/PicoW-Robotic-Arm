@@ -143,6 +143,6 @@ The repository was subsequently adapted and extended for the robotic arm project
 
 ## Authors
 
-**Riccardo Vecchi**, **Giuseppe Bellissimo, **Andrea Zappacosta**
+**Riccardo Vecchi**, **Giuseppe Bellissimo**, **Andrea Zappacosta**
 
 GitHub: https://github.com/riccardovecchi0101
